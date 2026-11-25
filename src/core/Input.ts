@@ -142,7 +142,7 @@ export class Input {
   requestPointerLock(): void {
     if (this.pointerLocked) return;
     // Browsers reject when the gesture was consumed elsewhere (menus, fresh focus); not an error.
-    const result = (this.canvas.requestPointerLock as () => Promise<void> | void).call(this.canvas);
+    const result = (this.canvas.requestPointerLock as (() => Promise<void> | void) | undefined)?.call(this.canvas);
     if (result && typeof (result as Promise<void>).catch === 'function') {
       (result as Promise<void>).catch(() => undefined);
     }
