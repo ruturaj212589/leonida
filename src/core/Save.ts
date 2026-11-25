@@ -76,22 +76,28 @@ export class Save {
       return false;
     }
     if (!raw) return false;
-    let file: SaveFile;
+    let file: Partial<SaveFile> | null;
     try {
-      file = JSON.parse(raw) as SaveFile;
+      file = JSON.parse(raw) as Partial<SaveFile> | null;
     } catch (err) {
       console.error('[save] corrupt save file', err);
       return false;
     }
-    if (file.version !== Save.VERSION) {
-      console.warn(`[save] version ${file.version} != ${Save.VERSION}; ignoring save`);
+    if (file?.version !== Save.VERSION) {
+      console.warn(`[save] version ${file?.version} != ${Save.VERSION}; ignoring save`);
       return false;
     }
-    this.time.deserialize(file.time);
+    const { time, systems } = file;
+    if (!time || !Number.isFinite(time.hour) || !Number.isFinite(time.day) ||
+        !systems || typeof systems !== 'object' || Array.isArray(systems)) {
+      console.error('[save] corrupt save file');
+      return false;
+    }
+    this.time.deserialize(time);
     for (const [id, target] of this.registry) {
-      if (!target.deserialize || !(id in file.systems)) continue;
+      if (!target.deserialize || !Object.hasOwn(systems, id)) continue;
       try {
-        target.deserialize(file.systems[id]);
+        target.deserialize(systems[id]);
       } catch (err) {
         console.error(`[save:${id}] deserialize failed`, err);
       }
